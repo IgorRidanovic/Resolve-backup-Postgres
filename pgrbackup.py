@@ -40,7 +40,7 @@ hostOS = sys.platform
 if hostOS == 'win32':
 	eol = '\r\n'
 	dumpTool = 'C:\\"Program Files"\\PostgreSQL\\%s\\bin\\pg_dump.exe' %pgVersion
-	destPath =  os.path.join('\\\SPFS', 'corral_new', 'AutoBackups', 'Resolve', 'PostgresDatabaseBackup')
+	destPath = os.path.join('C:\Users', currentUser, 'Documents\ResolveProjectBackup')
 
 elif hostOS == 'darwin':
 	eol = '\n'
