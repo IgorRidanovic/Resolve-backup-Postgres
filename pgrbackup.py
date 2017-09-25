@@ -47,8 +47,11 @@ elif hostOS == 'darwin':
 	dumpTool = '/Library/PostgresSQL/%s/bin/pg_dump' %pgVersion
 	destPath   = os.path.join('Users', currentUser, 'Documents/ResolveProjectBackup')
 
+# We assume Linux host unless Windows or OS X.
 else:
-	sys.exit('The %s host OS is currently not supported' %hostOS)
+	eol = '\n'
+	dumpTool = '/usr/bin/pg_dump'
+	destPath = os.path.join('/home', currentUser, 'Documents/ResolveProjectBackup')
 
 def wincompliance(ts):
 	"""remove space and colons from timestamp for Windows compliance"""
