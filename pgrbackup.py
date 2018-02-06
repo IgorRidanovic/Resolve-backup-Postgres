@@ -11,9 +11,10 @@ interval   = 720
 # Delete backups older than maxDays
 maxDays    = 30
 
-# Resolve Postgres database name and user name, default database name is provided
-dbName     = 'Database_Name'
+# Resolve Postgres database name and default authentication
+dbName     = '2018a'
 dbUser     = 'postgres'
+dbPassword = 'DaVinci'
 
 # Database server IP address unless this script is running on the same server
 dbHost     = '127.0.0.1'
@@ -31,7 +32,7 @@ from datetime import datetime
 from subprocess import Popen, PIPE, STDOUT
 
 sleeptime = interval * 60
-version = 1.0
+version = '1.0.1'
 currentUser = getpass.getuser()
 
 # Determine the host operating system and set OS specific variables
@@ -41,20 +42,43 @@ if hostOS == 'win32':
 	eol = '\r\n'
 	dumpTool = 'C:\\"Program Files"\\PostgreSQL\\%s\\bin\\pg_dump.exe' %pgVersion
 	destPath = os.path.join('C:\Users', currentUser, 'Documents\ResolveProjectBackup')
+	# Generate pgpass.conf authentication file if missing
+	# Without this file pd_dump requires manual authentication
+	pgPass = 'C:\\Users\\%s\\AppData\\Roaming\\postgresql\\pgpass.conf' %currentUser
+	if not os.path.isfile(pgPass):
+		pgPassFile = open(pgPass, 'w')
+		pgPassFile.write(dbHost + ':5432:*:' + dbUser + ':' + dbPassword)
+		pgPassFile.close()
 
 elif hostOS == 'darwin':
 	eol = '\n'
 	dumpTool = '/Library/PostgresSQL/%s/bin/pg_dump' %pgVersion
 	destPath   = os.path.join('Users', currentUser, 'Documents/ResolveProjectBackup')
+	# Generate .pgpass authentication file if missing
+	# Without this file pd_dump requires manual authentication
+	# NOT TESTED! Watch for .pgpass permissions issues.
+	pgPass = os.path.join('Users', currentUser, '.pgpass')
+	if not os.path.isfile(pgPass):
+		pgPassFile = open(pgPass, 'w')
+		pgPassFile.write(dbHost + ':5432:*:' + dbUser + ':' + dbPassword)
+		pgPassFile.close()
 
 # We assume Linux host unless Windows or OS X.
 else:
 	eol = '\n'
 	dumpTool = '/usr/bin/pg_dump'
 	destPath = os.path.join('/home', currentUser, 'Documents/ResolveProjectBackup')
+	# Generate .pgpass authentication file if missing
+	# Without this file pd_dump requires manual authentication
+	# NOT TESTED! Watch for .pgpass permissions issues.
+	pgPass = os.path.join('/home', currentUser, '.pgpass')
+	if not os.path.isfile(pgPass):
+		pgPassFile = open(pgPass, 'w')
+		pgPassFile.write(dbHost + ':5432:*:' + dbUser + ':' + dbPassword)
+		pgPassFile.close()
 
 def wincompliance(ts):
-	"""remove space and colons from timestamp for Windows compliance"""
+	'''remove space and colons from timestamp for Windows compliance'''
 	noSpace = 'T'.join(ts.split())
 	noColon = '-'.join(noSpace.split(':'))
 	return noColon
@@ -81,10 +105,10 @@ while True:
 	savePath = os.path.join(destPath, backupName + '.sqlc')
 	command = '%s -U %s -h %s -F c -f %s %s' % (dumpTool, dbUser, dbHost, savePath, dbName)
 	process = Popen(command, universal_newlines=True, stdout=PIPE, stderr=STDOUT, shell=True)
-        stdout, stderr = process.communicate()
-        print stdout
-        print stderr
-        print backupName + ' saved'
+	stdout, stderr = process.communicate()
+	print stdout
+	print stderr
+	print backupName + ' saved'
 
 	# Write a log entry
 	logfile = open(logPath, 'a')
@@ -101,7 +125,7 @@ while True:
 			if maxDays + 1< (now - timeStamp) / 86400: # x/86400 converts seconds to days
 				os.remove(deleteFile)
 
-        print 'sleeping...'
+	print 'sleeping...'
 	time.sleep(sleeptime)
 
 
